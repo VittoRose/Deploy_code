@@ -5,6 +5,7 @@
         Control a servo motor to move a black body used to calibrate the termal camera
         Read an accelerometer used as a backup for the operator commands
 */
+#include    <Servo.h>
 
 #define     ENDL    2       // Arduino connection
 #define     ENDH    3
@@ -16,11 +17,25 @@
 #define     MIN45   10
 #define     PLUS180 9
 #define     MIN180  12
+#define     SERVOLED A4
+#define     SERVOPIN A0
+
+#define INTERVAL 900        //Servo parameters
+#define SERVOBTT 2
+#define MAXSERVOANG 100
+#define MINSERVOANG 10
+#define SERVOSPEED 40
 
 #define     NSTEP   400     // Stepper parameters
 #define     TAU     4
 #define     CW      HIGH
 #define     CCW     LOW
+
+/*
+---------------------------------------------------
+        STEPPER
+---------------------------------------------------
+*/
 
 bool ena = HIGH;
 bool brk = HIGH;
@@ -35,9 +50,29 @@ volatile int counter2 = 0;
 
 volatile bool buttonInterrupt = LOW;
 
+/*
+---------------------------------------------------------------------
+            SERVO
+---------------------------------------------------------------------
+*/
+uint8_t   pos;
+char  carattere = '0';
+bool   stato_led = 0;
+
+int target = MINSERVOANG;
+int next_target = MAXSERVOANG;
+int last_position = 11;
+
+Servo blackbody;
+
 void setup(){
     Serial.begin(9600);
 
+/*
+---------------------------------------------------
+        STEPPER
+---------------------------------------------------
+*/
     pinMode(PUL, OUTPUT);
     pinMode(DIR, OUTPUT);
     pinMode(ENA, OUTPUT);
@@ -63,11 +98,31 @@ void setup(){
     _min180 = digitalRead(MIN180);
     _setzero = digitalRead(SZERO);
 
+/*
+---------------------------------------------------------------------
+            SERVO
+---------------------------------------------------------------------
+*/
+
+  blackbody.attach(SERVOPIN);
+  blackbody.write(MAXSERVOANG);
+
+  pinMode(SERVOBTT, INPUT);
+  
+  pinMode(SERVOLED, OUTPUT);
+  digitalWrite(SERVOLED, LOW);
+
     Serial.println("ARDUINO READY");
 
 }
 
 void loop(){
+
+/*
+---------------------------------------------------
+        STEPPER
+---------------------------------------------------
+*/
 
     if(digitalRead(MIN45) != _min45 && buttonInterrupt == LOW){
         delay(300);
@@ -103,7 +158,56 @@ void loop(){
     _plus180 = digitalRead(PLUS180);
     _min180 = digitalRead(MIN180);
     _setzero = digitalRead(SZERO);
+/*
+---------------------------------------------------------------------
+            SERVO
+---------------------------------------------------------------------
+*/
+carattere =  Serial.read();
+    
+if(carattere == 'a' || digitalRead(SERVOBTT)) target = next_target;
 
+if (target > last_position) {
+  Serial.println("opening phase...");
+    
+  for (pos = last_position; pos <= target; pos++) {
+    blackbody.write(pos);
+    delay(SERVOSPEED);
+    next_target = MINSERVOANG;
+    digitalWrite(SERVOLED, HIGH);
+  }
+
+  Serial.println("opening phase COMPLETED");
+  digitalWrite(SERVOLED, LOW);
+}
+
+if (target < last_position) {
+  Serial.println("closing phase...");
+  
+  for (pos = last_position; pos >= target; pos--) {
+    blackbody.write(pos);
+    delay(SERVOSPEED);
+    next_target = MAXSERVOANG;
+    digitalWrite(SERVOLED, HIGH);
+  }
+      
+  Serial.println("closing phase COMPLETED");
+  digitalWrite(SERVOLED, LOW);
+  }    
+
+  last_position = target;
+
+  if(digitalRead(SERVOBTT)){
+
+    Serial.println("closing phase...");
+    
+    for (pos = last_position; pos >= MINSERVOANG; pos--) {
+      blackbody.write(pos);
+      delay(SERVOSPEED);
+      next_target = MAXSERVOANG;
+      digitalWrite(SERVOLED, HIGH);
+    }
+  }
 }
 
 void rotate_angle(float ang, int t, bool dir){
