@@ -10,11 +10,11 @@
 #define     ENDH    3
 #define     DIR     4
 #define     PUL     5       
-#define     SZERO   6
+#define     SZERO   10
 #define     ENA     7
-#define     PLUS45  9
+#define     PLUS45  11
 #define     MIN45   10
-#define     PLUS180 11
+#define     PLUS180 9
 #define     MIN180  12
 
 #define     NSTEP   400     // Stepper parameters
@@ -22,13 +22,13 @@
 #define     CW      HIGH
 #define     CCW     LOW
 
-//bool CW = HIGH;
-//bool CCW = LOW;
 bool ena = HIGH;
 bool brk = HIGH;
 bool _plus45 = LOW;
-bool _minus45 = LOW;
-
+bool _min45 = LOW;
+bool _plus180 = LOW;
+bool _min180 = LOW;
+bool _setzero = LOW;
 
 volatile int counter1 = 0;
 volatile int counter2 = 0;
@@ -45,6 +45,7 @@ void setup(){
     pinMode(MIN45, INPUT);
     pinMode(PLUS180, INPUT);
     pinMode(MIN180, INPUT);
+    pinMode(SZERO,INPUT);
     pinMode(ENDL, INPUT_PULLUP);
     pinMode(ENDH, INPUT_PULLUP);
     pinMode(LED_BUILTIN, OUTPUT);
@@ -56,45 +57,53 @@ void setup(){
     digitalWrite(DIR, HIGH);
     digitalWrite(ENA, HIGH);
 
+    _plus45 = digitalRead(PLUS45);
+    _min45 = digitalRead(MIN45);
+    _plus180 = digitalRead(PLUS180);
+    _min180 = digitalRead(MIN180);
+    _setzero = digitalRead(SZERO);
+
+    Serial.println("ARDUINO READY");
+
 }
 
 void loop(){
 
-    if(digitalRead(MIN45) && buttonInterrupt == LOW){
+    if(digitalRead(MIN45) != _min45 && buttonInterrupt == LOW){
         delay(300);
         Serial.println("Rotazione -45");
         rotate_angle(45, 10, CCW);
     }else buttonInterrupt = LOW;
-    /*
-    if(digitalRead(PLUS45)){
+    
+    if(digitalRead(PLUS45) != _plus45 & buttonInterrupt == LOW){
         delay(300);
         Serial.println("Rotazione +45");
         rotate_angle(45, 10, CW);
     }else buttonInterrupt = LOW;
-    */
-    if(digitalRead(MIN180) && buttonInterrupt == LOW){
+    
+    if(digitalRead(MIN180) != _min180 && buttonInterrupt == LOW){
         delay(300);
         Serial.println("Rotazione -180");
         rotate_angle(180, 10, CCW);
     }else buttonInterrupt = LOW;
 
-    if(digitalRead(PLUS180) && buttonInterrupt == LOW){
+    if(digitalRead(PLUS180) != _plus180 && buttonInterrupt == LOW){
         delay(300);
         Serial.println("Rotazione +180");
-        rotate_angle(180, 1, CW);
+        rotate_angle(180, 10, CW);
     }else buttonInterrupt = LOW;
 
-    if(digitalRead(SZERO)){
+    if(digitalRead(SZERO) != _setzero){
         delay(300);
         set_zero();
     }
 
-}
+    _plus45 = digitalRead(PLUS45);
+    _min45 = digitalRead(MIN45);
+    _plus180 = digitalRead(PLUS180);
+    _min180 = digitalRead(MIN180);
+    _setzero = digitalRead(SZERO);
 
-void step(int t){
-    digitalWrite(PUL, LOW);
-    delay(t);
-    digitalWrite(PUL, HIGH);
 }
 
 void rotate_angle(float ang, int t, bool dir){
