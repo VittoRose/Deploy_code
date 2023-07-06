@@ -25,16 +25,17 @@
 #define     PLUS180 39
 #define     MIN180  39
 
-#define     SERVOLED A4
-#define     SERVOPIN 50
+#define     SERVOLED    A4
+#define     SERVOPIN    50
 #define     HGRESISTOR  28
 #define     LGRESISTOR  24
 
-#define INTERVAL 900        //Servo parameters
-#define SERVOBTT 50
-#define MAXSERVOANG 100
-#define MINSERVOANG 10
-#define SERVOSPEED 40
+#define     INTERVAL    900        //Servo parameters
+#define     SERVOBTT    50
+#define     MAXSERVOANG 100
+#define     MINSERVOANG 10
+#define     SERVOSPEED  40
+#define     RESDELAY    30000
 
 #define     NSTEP   400     // Stepper parameters
 #define     TAU     4
@@ -58,7 +59,6 @@ bool _setzero = LOW;
 
 volatile int counter1 = 0;
 volatile int counter2 = 0;
-
 volatile bool buttonInterrupt = LOW;
 
 /*
@@ -67,8 +67,10 @@ volatile bool buttonInterrupt = LOW;
 ---------------------------------------------------------------------
 */
 uint8_t   pos;
-char   txt_in = '0';
-bool   stato_led = 0;
+char    txt_in = '0';
+
+unsigned long hg_timer = 0;
+unsigned long lg_timer = 0;
 
 int target = MINSERVOANG;
 int next_target = MAXSERVOANG;
@@ -94,16 +96,15 @@ void setup(){
     pinMode(SZERO,INPUT);
     pinMode(ENDL, INPUT);
     pinMode(ENDH, INPUT);
-    pinMode(LED_BUILTIN, OUTPUT);
 
-    attachInterrupt(digitalPinToInterrupt(ENDL), end_low, RISING);
+    attachInterrupt(digitalPinToInterrupt(ENDL), end_low, RISING);          
     attachInterrupt(digitalPinToInterrupt(ENDH), end_high, RISING);
 
     digitalWrite(PUL, HIGH);
     digitalWrite(DIR, HIGH);
     digitalWrite(ENA, HIGH);
 
-    _plus45 = digitalRead(PLUS45);
+    _plus45 = digitalRead(PLUS45);              //save the value of the buttons at the starting time to detect changes
     _min45 = digitalRead(MIN45);
     _plus180 = digitalRead(PLUS180);
     _min180 = digitalRead(MIN180);
@@ -121,9 +122,12 @@ void setup(){
   pinMode(SERVOBTT, INPUT);
   
   pinMode(SERVOLED, OUTPUT);
-  digitalWrite(SERVOLED, LOW);
   pinMode(LGRESISTOR, OUTPUT);
   pinMode(HGRESISTOR, OUTPUT);
+
+  digitalWrite(SERVOLED, LOW);
+  digitalWrite(LGRESISTOR, LOW);
+  digitalWrite(HGRESISTOR, LOW);
 
   Serial.println("------------------------------");
   Serial.println("\tARDUINO READY");
@@ -184,7 +188,6 @@ void loop(){
 ---------------------------------------------------------------------
 */
 
-txt_in =  Serial.read();
     
 if(txt_in == 'a' || digitalRead(SERVOBTT)) target = next_target;
 
@@ -243,6 +246,23 @@ if (target < last_position) {
         digitalWrite(LGRESISTOR, LOW);
     }
 
+    if(txt_in == 'h'){
+        Serial.println("Heating the HG resistor");
+        digitalWrite(HGRESISTOR, HIGH);
+        hg_timer = millis();
+    }    
+
+    if(millis() - hg_timer >= RESDELAY) digitalWrite(HGRESISTOR, LOW);
+
+    if(txt_in == 'l'){
+        Serial.println("Heating the LG resistor");
+        digitalWrite(LGRESISTOR, HIGH);
+        lg_timer = millis();
+    }    
+
+    if(millis() - lg_timer >= RESDELAY) digitalWrite(LGRESISTOR, LOW);
+
+
     if(txt_in == 'r') {
         Serial.println("--------------------------------------");
         Serial.println("Reset in 3 seconds");
@@ -253,10 +273,10 @@ if (target < last_position) {
 }
 
 void rotate_angle(float ang, int t, bool dir){
-    // function that add or subtract the ang value to the relative position of the PHP
-    // ang specify the value of the rotation, insert the PHP value the function evaluate with the gear ratio
-    // t, variable that specify the angular velocity, small t => fast rotation
-    // cw, use SOMETHING to increase the angle, use SOMETHING ELSE to reduce the angle
+    /* function that add or subtract the ang value to the relative position of the PHP
+    ang specify the value of the rotation, insert the PHP value the function evaluate with the gear ratio
+    t, variable that specify the angular velocity, small t => fast rotation
+    cw, use CW to increase the angle, use CCW to reduce the angle */
 
     int i = 0;
     int step = 0;
@@ -307,7 +327,6 @@ void set_zero(){
 
     Serial.println("Limit switch released");
 
-    digitalWrite(LED_BUILTIN, LOW);
     
     attachInterrupt(digitalPinToInterrupt(ENDL), end_low, FALLING);
     delay(100);
@@ -340,8 +359,10 @@ void end_low(){
 
 void end_high(){
     // function executed in case the limit switch send a signal, case 180 degrees
+    
     Serial.println("INTERRUPT HIGH");
     buttonInterrupt = HIGH;
+    
     digitalWrite(DIR, CCW);
     digitalWrite(PUL, HIGH);
     
