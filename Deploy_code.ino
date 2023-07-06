@@ -7,21 +7,26 @@
 */
 #include    <Servo.h>
 
-#define     ENDL    2       // Arduino connection
-#define     ENDH    3
-#define     DIR     4
-#define     PUL     5       
-#define     SZERO   10
-#define     ENA     7
-#define     PLUS45  11
-#define     MIN45   10
-#define     PLUS180 9
-#define     MIN180  12
+#define     ENDL    3      //Grey    // Arduino connection
+#define     ENDH    2      //blue
+
+#define     PUL     33      // Stepper driver connection 
+#define     DIR     35      
+#define     ENA     37
+
+#define     SZERO   41      // Buttons connection
+#define     PLUS45  49
+#define     MIN45   A5
+#define     PLUS180 39
+#define     MIN180  39
+
 #define     SERVOLED A4
-#define     SERVOPIN A0
+#define     SERVOPIN 50
+#define     HGRESISTOR  28
+#define     LGRESISTOR  24
 
 #define INTERVAL 900        //Servo parameters
-#define SERVOBTT 2
+#define SERVOBTT 50
 #define MAXSERVOANG 100
 #define MINSERVOANG 10
 #define SERVOSPEED 40
@@ -39,6 +44,7 @@
 
 bool ena = HIGH;
 bool brk = HIGH;
+
 bool _plus45 = LOW;
 bool _min45 = LOW;
 bool _plus180 = LOW;
@@ -56,7 +62,7 @@ volatile bool buttonInterrupt = LOW;
 ---------------------------------------------------------------------
 */
 uint8_t   pos;
-char  carattere = '0';
+char   txt_in = '0';
 bool   stato_led = 0;
 
 int target = MINSERVOANG;
@@ -66,7 +72,7 @@ int last_position = 11;
 Servo blackbody;
 
 void setup(){
-    Serial.begin(9600);
+    Serial.begin(115200);
 
 /*
 ---------------------------------------------------
@@ -81,8 +87,8 @@ void setup(){
     pinMode(PLUS180, INPUT);
     pinMode(MIN180, INPUT);
     pinMode(SZERO,INPUT);
-    pinMode(ENDL, INPUT_PULLUP);
-    pinMode(ENDH, INPUT_PULLUP);
+    pinMode(ENDL, INPUT);
+    pinMode(ENDH, INPUT);
     pinMode(LED_BUILTIN, OUTPUT);
 
     attachInterrupt(digitalPinToInterrupt(ENDL), end_low, RISING);
@@ -111,6 +117,8 @@ void setup(){
   
   pinMode(SERVOLED, OUTPUT);
   digitalWrite(SERVOLED, LOW);
+  pinMode(LGRESISTOR, OUTPUT);
+  pinMode(HGRESISTOR, OUTPUT);
 
     Serial.println("ARDUINO READY");
 
@@ -124,31 +132,35 @@ void loop(){
 ---------------------------------------------------
 */
 
-    if(digitalRead(MIN45) != _min45 && buttonInterrupt == LOW){
+    txt_in = Serial.read();
+
+    if((digitalRead(MIN45) != _min45 || txt_in == 'a') && buttonInterrupt == LOW){
         delay(300);
         Serial.println("Rotazione -45");
         rotate_angle(45, 10, CCW);
     }else buttonInterrupt = LOW;
     
-    if(digitalRead(PLUS45) != _plus45 & buttonInterrupt == LOW){
+    if((digitalRead(PLUS45) != _plus45 || txt_in == 'b') && buttonInterrupt == LOW){
         delay(300);
         Serial.println("Rotazione +45");
         rotate_angle(45, 10, CW);
     }else buttonInterrupt = LOW;
-    
-    if(digitalRead(MIN180) != _min180 && buttonInterrupt == LOW){
+
+
+   if((digitalRead(MIN180) != _min180 || txt_in == 'c') && buttonInterrupt == LOW){
         delay(300);
         Serial.println("Rotazione -180");
         rotate_angle(180, 10, CCW);
     }else buttonInterrupt = LOW;
 
-    if(digitalRead(PLUS180) != _plus180 && buttonInterrupt == LOW){
+    if((digitalRead(PLUS180) != _plus180 || txt_in == 'd') && buttonInterrupt == LOW){
         delay(300);
         Serial.println("Rotazione +180");
         rotate_angle(180, 10, CW);
     }else buttonInterrupt = LOW;
 
-    if(digitalRead(SZERO) != _setzero){
+
+    if(digitalRead(SZERO) != _setzero || txt_in == 'z'){
         delay(300);
         set_zero();
     }
@@ -158,14 +170,16 @@ void loop(){
     _plus180 = digitalRead(PLUS180);
     _min180 = digitalRead(MIN180);
     _setzero = digitalRead(SZERO);
+
 /*
 ---------------------------------------------------------------------
-            SERVO
+                        SERVO
 ---------------------------------------------------------------------
 */
-carattere =  Serial.read();
+
+txt_in =  Serial.read();
     
-if(carattere == 'a' || digitalRead(SERVOBTT)) target = next_target;
+if(txt_in == 'a' || digitalRead(SERVOBTT)) target = next_target;
 
 if (target > last_position) {
   Serial.println("opening phase...");
@@ -208,6 +222,27 @@ if (target < last_position) {
       digitalWrite(SERVOLED, HIGH);
     }
   }
+
+    if(txt_in == 'h') {
+        Serial.println("Heating the HG resistor");
+        digitalWrite(HGRESISTOR, HIGH);
+        delay(30*1000);
+        digitalWrite(HGRESISTOR, LOW);
+    }
+    if(txt_in == 'l') {
+        Serial.println("Heating the LG resistor");
+        digitalWrite(LGRESISTOR, HIGH);
+        delay(30*1000);
+        digitalWrite(LGRESISTOR, LOW);
+    }
+
+    if(txt_in == 'r') {
+        Serial.println("--------------------------------------");
+        Serial.println("Reset in 3 seconds");
+        Serial.println("--------------------------------------");
+        delay(3000);
+        asm volatile (" jmp 0 ");
+    }
 }
 
 void rotate_angle(float ang, int t, bool dir){
@@ -232,7 +267,7 @@ void rotate_angle(float ang, int t, bool dir){
             delay(t);
             digitalWrite(PUL, HIGH);
         }else {
-            Serial.println("MAX ANGLE REACHED");
+            Serial.println(" END SWITCH SIGNAL");
             break;
         }
     }
@@ -274,7 +309,7 @@ void set_zero(){
 void end_low(){
     // function executed in case the limit switch send a signal, case 0 degrees 
 
-    Serial.println("INTERRUPT");
+    Serial.println("INTERRUPT LOW");
     buttonInterrupt = HIGH;
     digitalWrite(DIR, CW);
     digitalWrite(PUL, HIGH);
@@ -283,7 +318,7 @@ void end_low(){
         
         counter1++;
         
-        if(counter1 >= 100){
+        if(counter1 >= 200){
             digitalWrite(PUL, LOW);
             counter2++;
             if(counter2 >= 70){
@@ -297,8 +332,7 @@ void end_low(){
 
 void end_high(){
     // function executed in case the limit switch send a signal, case 180 degrees
-
-    Serial.println("INTERRUPT");
+    Serial.println("INTERRUPT HIGH");
     buttonInterrupt = HIGH;
     digitalWrite(DIR, CCW);
     digitalWrite(PUL, HIGH);
