@@ -1,14 +1,19 @@
 /*  DEPLOY! project code
+
+    More info about this project at https://deploy.unipi.it/
+
     by Rosellini Vittorio
-    Code purpose: 
-        Control a stepper motor to change the PHP configuration 
-        Control a servo motor to move a black body used to calibrate the termal camera
-        Read an accelerometer used as a backup for the operator commands
+
+    VittoRose (GitHub)
+
+    Created: May 2023
+    Updated: July 2023
+
 */
 #include    <Servo.h>
 
-#define     ENDL    3      //Grey    // Arduino connection
-#define     ENDH    2      //blue
+#define     ENDL    3      // Arduino connection
+#define     ENDH    2
 
 #define     PUL     33      // Stepper driver connection 
 #define     DIR     35      
@@ -120,7 +125,9 @@ void setup(){
   pinMode(LGRESISTOR, OUTPUT);
   pinMode(HGRESISTOR, OUTPUT);
 
-    Serial.println("ARDUINO READY");
+  Serial.println("------------------------------");
+  Serial.println("\tARDUINO READY");
+  Serial.println("------------------------------");
 
 }
 
@@ -136,26 +143,26 @@ void loop(){
 
     if((digitalRead(MIN45) != _min45 || txt_in == 'a') && buttonInterrupt == LOW){
         delay(300);
-        Serial.println("Rotazione -45");
+        Serial.println("Starting -45 degrees rotation");
         rotate_angle(45, 10, CCW);
     }else buttonInterrupt = LOW;
     
     if((digitalRead(PLUS45) != _plus45 || txt_in == 'b') && buttonInterrupt == LOW){
         delay(300);
-        Serial.println("Rotazione +45");
+        Serial.println("Starting +45 degrees rotation");
         rotate_angle(45, 10, CW);
     }else buttonInterrupt = LOW;
 
 
    if((digitalRead(MIN180) != _min180 || txt_in == 'c') && buttonInterrupt == LOW){
         delay(300);
-        Serial.println("Rotazione -180");
+        Serial.println("Starting -180 degrees rotation");
         rotate_angle(180, 10, CCW);
     }else buttonInterrupt = LOW;
 
     if((digitalRead(PLUS180) != _plus180 || txt_in == 'd') && buttonInterrupt == LOW){
         delay(300);
-        Serial.println("Rotazione +180");
+        Serial.println("Starting +180 degrees rotation");
         rotate_angle(180, 10, CW);
     }else buttonInterrupt = LOW;
 
@@ -281,26 +288,27 @@ void set_zero(){
     detachInterrupt(digitalPinToInterrupt(ENDL));
     digitalWrite(DIR, CCW);
 
+    Serial.println("PHP reset");
+
     while(!digitalRead(ENDL)){
         digitalWrite(PUL, LOW);
         delay(30);
         digitalWrite(PUL, HIGH);
-        Serial.println("In cerca del finecorsa");
     }
 
-    Serial.println("Finecorsa trovato");
+    Serial.println("Limit switch pressed");
     
     digitalWrite(DIR, CW);
     while(digitalRead(ENDL)){
         digitalWrite(PUL, LOW);
         delay(30);
         digitalWrite(PUL, HIGH);
-        Serial.println("Cercando di lasciare il finecorsa");
     }
-    
+
+    Serial.println("Limit switch released");
+
     digitalWrite(LED_BUILTIN, LOW);
     
-    Serial.println("Finecorsa rilasciato");
     attachInterrupt(digitalPinToInterrupt(ENDL), end_low, FALLING);
     delay(100);
 
