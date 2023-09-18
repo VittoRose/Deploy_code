@@ -12,26 +12,26 @@
 */
 #include    <Servo.h>
 
-#define     ENDL    3      // Arduino connection
-#define     ENDH    2
+#define     ENDL    2      // Arduino connection
+#define     ENDH    3
 
-#define     PUL     33      // Stepper driver connection 
-#define     DIR     35      
-#define     ENA     37
+#define     PUL     9      // Stepper driver connection 
+#define     DIR     10      
+#define     ENA     11
 
-#define     SZERO   41      // Buttons connection
-#define     PLUS45  49
-#define     MIN45   A5
-#define     PLUS180 39
-#define     MIN180  39
+#define     SZERO   23      // Buttons connection
+#define     PLUS45  25
+#define     MIN45   27
+#define     PLUS180 29
+#define     MIN180  31
 
-#define     SERVOLED    A4
-#define     SERVOPIN    50
-#define     HGRESISTOR  28
-#define     LGRESISTOR  24
+#define     SERVOLED    13
+#define     SERVOPIN    46
+#define     HGRESISTOR  7
+#define     LGRESISTOR  8
 
 #define     INTERVAL    900        //Servo parameters
-#define     SERVOBTT    50
+#define     SERVOBTT    33
 #define     MAXSERVOANG 100
 #define     MINSERVOANG 10
 #define     SERVOSPEED  40
@@ -42,6 +42,13 @@
 #define     CW      HIGH
 #define     CCW     LOW
 
+/*
+    extra button provided in PCB
+    #define     EXTRA1  31
+    #define     EXTRA2  32
+    #define     EXTRA3  33
+
+*/
 /*
 ---------------------------------------------------
         STEPPER
@@ -86,21 +93,22 @@ void setup(){
         STEPPER
 ---------------------------------------------------
 */
-    pinMode(PUL, OUTPUT);
+    pinMode(PUL, OUTPUT);           //Stepper driver signal pins
     pinMode(DIR, OUTPUT);
     pinMode(ENA, OUTPUT);
-    pinMode(PLUS45, INPUT);
+
+    pinMode(PLUS45, INPUT);         //Buttons
     pinMode(MIN45, INPUT);
     pinMode(PLUS180, INPUT);
     pinMode(MIN180, INPUT);
     pinMode(SZERO,INPUT);
-    pinMode(ENDL, INPUT);
+    
+    pinMode(ENDL, INPUT);           //Limit switches
     pinMode(ENDH, INPUT);
-
     attachInterrupt(digitalPinToInterrupt(ENDL), end_low, RISING);          
     attachInterrupt(digitalPinToInterrupt(ENDH), end_high, RISING);
 
-    digitalWrite(PUL, HIGH);
+    digitalWrite(PUL, HIGH);               // start with high => everything on
     digitalWrite(DIR, HIGH);
     digitalWrite(ENA, HIGH);
 
