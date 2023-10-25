@@ -82,6 +82,7 @@ volatile bool buttonInterrupt = LOW;
 uint8_t pos;
 char txt_in = '0';
 
+bool _servobutton = LOW;
 int target = MINSERVOANG;
 int next_target = MAXSERVOANG;
 int last_position = 11;
@@ -153,6 +154,7 @@ void setup() {
   pinMode(HGRESISTOR, OUTPUT);
 
   digitalWrite(SERVOLED, LOW);
+  _servobutton = digitalRead(SERVOBTT);
 
 
   /*
@@ -226,7 +228,7 @@ void loop() {
 */
 
 
-  if (txt_in == 'e' || digitalRead(SERVOBTT)) target = next_target;
+  if (txt_in == 'e' ||  digitalRead(SERVOBTT) != _servobutton) target = next_target;
 
   if (target > last_position) {
     Serial.println("opening phase...");
@@ -269,6 +271,8 @@ void loop() {
       digitalWrite(SERVOLED, HIGH);
     }
   }
+
+  _servobutton = digitalRead(SERVOBTT);
 
   /*
 ---------------------------------------------------------------------

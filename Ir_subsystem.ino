@@ -9,7 +9,6 @@
     Created: May 2023
     Updated: July 2023
 
-*/
 #include <Servo.h>
 #include <MPU6050_tockn.h>
 #include <Wire.h>
@@ -192,3 +191,4 @@ float average(float measure[], int size) {
 
   return avg / (float)size;
 }
+*/
