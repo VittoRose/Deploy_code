@@ -36,7 +36,7 @@
 #define ACC_Z2 mpu6050.getAccZ() * mpu6050.getAccZ()
 
 #define INTERVAL 900  //Servo parameters
-#define SERVOBTT 33
+#define SERVOBTT 34
 #define MAXSERVOANG 100
 #define MINSERVOANG 10
 #define SERVOSPEED 40
@@ -48,6 +48,7 @@
 #define TAU 4
 #define CW HIGH
 #define CCW LOW
+#define INTERRUPT_COND RISING
 
 /*
     extra button provided in PCB
@@ -125,8 +126,8 @@ void setup() {
 
   pinMode(ENDL, INPUT);  //Limit switches
   pinMode(ENDH, INPUT);
-  attachInterrupt(digitalPinToInterrupt(ENDL), end_low, RISING);
-  attachInterrupt(digitalPinToInterrupt(ENDH), end_high, RISING);
+  attachInterrupt(digitalPinToInterrupt(ENDL), end_low, INTERRUPT_COND);
+  attachInterrupt(digitalPinToInterrupt(ENDH), end_high, INTERRUPT_COND);
 
   digitalWrite(PUL, HIGH);  // start with high => everything on
   digitalWrite(DIR, HIGH);
@@ -169,7 +170,7 @@ void setup() {
   digitalWrite(LGRESISTOR, LOW);
   digitalWrite(HGRESISTOR, LOW);
 
-  Serial.println("------------------------------");
+  Serial.println("\n------------------------------");
   Serial.println("\tARDUINO READY");
   Serial.println("------------------------------");
 }
@@ -368,7 +369,7 @@ void set_zero() {
   Serial.println("Limit switch released");
 
 
-  attachInterrupt(digitalPinToInterrupt(ENDL), end_low, FALLING);
+  attachInterrupt(digitalPinToInterrupt(ENDL), end_low, INTERRUPT_COND);
   delay(100);
 }
 
