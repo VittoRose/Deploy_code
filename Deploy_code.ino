@@ -7,9 +7,10 @@
     VittoRose (GitHub)
 
     Created: May 2023
-    Updated: July 2023
+    Updated: October 2023
 
 */
+
 #include <Servo.h>
 #include <MPU6050_tockn.h>
 #include <Wire.h>
@@ -35,8 +36,7 @@
 #define ACC_Y2 mpu6050.getAccY() * mpu6050.getAccY()
 #define ACC_Z2 mpu6050.getAccZ() * mpu6050.getAccZ()
 
-#define INTERVAL 900  //Servo parameters
-#define SERVOBTT 34
+#define SERVOBTT 34            //Servo parameters
 #define MAXSERVOANG 100
 #define MINSERVOANG 10
 #define SERVOSPEED 40
@@ -80,14 +80,10 @@ volatile bool buttonInterrupt = LOW;
             SERVO
 ---------------------------------------------------------------------
 */
-uint8_t pos;
+
 char txt_in = '0';
-
-bool _servobutton = LOW;
-int target = MINSERVOANG;
-int next_target = MAXSERVOANG;
-int last_position = 11;
-
+bool _servobtt = LOW;
+uint8_t servo_ang = MAXSERVOANG;
 Servo blackbody;
 
 /*
@@ -155,7 +151,7 @@ void setup() {
   pinMode(HGRESISTOR, OUTPUT);
 
   digitalWrite(SERVOLED, LOW);
-  _servobutton = digitalRead(SERVOBTT);
+  _servobtt = digitalRead(SERVOBTT);
 
 
   /*
@@ -228,52 +224,36 @@ void loop() {
 ---------------------------------------------------------------------
 */
 
+  if (txt_in == 'e' || digitalRead(SERVOBTT) != _servobtt) {
 
-  if (txt_in == 'e' ||  digitalRead(SERVOBTT) != _servobutton) target = next_target;
+    if (servo_ang == MAXSERVOANG) {
+      Serial.println("--------------------------");
+      Serial.println("Closing Servo");
 
-  if (target > last_position) {
-    Serial.println("opening phase...");
+      while (servo_ang > MINSERVOANG) {
+        blackbody.write(servo_ang);
+        delay(SERVOSPEED);
+        servo_ang--;
+      }
 
-    for (pos = last_position; pos <= target; pos++) {
-      blackbody.write(pos);
-      delay(SERVOSPEED);
-      next_target = MINSERVOANG;
-      digitalWrite(SERVOLED, HIGH);
-    }
+      Serial.println("Servo closed");
+      Serial.println("--------------------------");
 
-    Serial.println("opening phase COMPLETED");
-    digitalWrite(SERVOLED, LOW);
-  }
+    } else if (servo_ang == MINSERVOANG) {
+      Serial.println("--------------------------");
+      Serial.println("Opening Servo");
 
-  if (target < last_position) {
-    Serial.println("closing phase...");
-
-    for (pos = last_position; pos >= target; pos--) {
-      blackbody.write(pos);
-      delay(SERVOSPEED);
-      next_target = MAXSERVOANG;
-      digitalWrite(SERVOLED, HIGH);
-    }
-
-    Serial.println("closing phase COMPLETED");
-    digitalWrite(SERVOLED, LOW);
-  }
-
-  last_position = target;
-
-  if (digitalRead(SERVOBTT)) {
-
-    Serial.println("closing phase...");
-
-    for (pos = last_position; pos >= MINSERVOANG; pos--) {
-      blackbody.write(pos);
-      delay(SERVOSPEED);
-      next_target = MAXSERVOANG;
-      digitalWrite(SERVOLED, HIGH);
+      while (servo_ang < MAXSERVOANG) {
+        blackbody.write(servo_ang);
+        delay(SERVOSPEED);
+        servo_ang++;
+      }
+      Serial.println("Servo open");
+      Serial.println("--------------------------");
     }
   }
 
-  _servobutton = digitalRead(SERVOBTT);
+  _servobtt = digitalRead(SERVOBTT);
 
   /*
 ---------------------------------------------------------------------
@@ -317,12 +297,10 @@ void loop() {
 
 void rotate_angle(float ang, int t, bool dir) {
   /* function that add or subtract the ang value to the relative position of the PHP
-    ang specify the value of the rotation, insert the PHP value the function evaluate with the gear ratio
-    t, variable that specify the angular velocity, small t => fast rotation
-    cw, use CW to increase the angle, use CCW to reduce the angle */
+    */
 
-  int i = 0;
-  int step = 0;
+  uint8_t i = 0;
+  uint8_t step = 0;
   step = round(TAU * NSTEP * ang / 360);
   Serial.println(step);
 
