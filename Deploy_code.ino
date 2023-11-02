@@ -363,7 +363,7 @@ void end_low() {
 
     counter1++;
 
-    if (counter1 >= 200) {
+    if (counter1 >= 200) {            // using counter as a delay
       digitalWrite(PUL, LOW);
       counter2++;
       if (counter2 >= 70) {
@@ -371,6 +371,13 @@ void end_low() {
         counter2 = 0;
       }
       counter1 = 0;
+    }
+
+    if (digitalRead(ENDH)){
+      digitalWrite(PUL, HIGH);
+      Serial.println("-------------------------------");
+      Serial.print("ERROR\t"); Serial.println("Both limit switches pressed");
+      Serial.println("-------------------------------");
     }
   }
 }
@@ -396,6 +403,13 @@ void end_high() {
         counter2 = 0;
       }
       counter1 = 0;
+    }
+    
+    if (digitalRead(ENDH)){
+      digitalWrite(PUL, HIGH);
+      Serial.println("-------------------------------");
+      Serial.print("ERROR\t"); Serial.println("Both limit switches pressed");
+      Serial.println("-------------------------------");
     }
   }
 }
