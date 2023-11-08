@@ -262,7 +262,8 @@ void loop() {
 */
 
   mpu6050.update();
-
+  
+  //collect acceleration sample 
   fil[j] = sqrt(ACC_X2 + ACC_Y2 + ACC_Z2);
 
   if (j < (SIZE - 1)) j++;
@@ -270,12 +271,14 @@ void loop() {
 
   avg = average(fil, SIZE);
 
+  // hypergravity resistor
   if (txt_in == 'h' || avg >= 1.6) {
     Serial.println("Heating the HG resistor");
     digitalWrite(HGRESISTOR, HIGH);
     hg_timer = millis();
   }
 
+  // microgravity resistor
   if (txt_in == 'l' || avg <= 0.4) {
     Serial.println("Heating the LG resistor");
     digitalWrite(LGRESISTOR, HIGH);
@@ -308,11 +311,11 @@ void rotate_angle(float ang, int t, bool dir) {
   } else digitalWrite(DIR, LOW);
 
   for (i = 0; i < step; i++) {
-    if (buttonInterrupt == LOW && !digitalRead(LID)) {
+    if (buttonInterrupt == LOW && digitalRead(LID)) {
       digitalWrite(PUL, LOW);
       delay(t);
       digitalWrite(PUL, HIGH);
-    } else if (digitalRead(LID)){
+    } else if (!digitalRead(LID)){
       digitalWrite(PUL, HIGH);
       Serial.println("LID OPEN");
       break;
@@ -331,7 +334,7 @@ void set_zero() {
   Serial.println("PHP reset");
 
   // rotating the php untill the lower switches is pressed
-  while (!digitalRead(ENDL) && !digitalRead(LID)) {
+  while (!digitalRead(ENDL) && digitalRead(LID)) {
     digitalWrite(PUL, LOW);
     delay(30);
     digitalWrite(PUL, HIGH);
@@ -343,7 +346,7 @@ void set_zero() {
   digitalWrite(DIR, CW);
 
   // leaving the end switches 
-  while (digitalRead(ENDL) && !digitalRead(ENDH) && !digitalRead(LID)) {    
+  while (digitalRead(ENDL) && !digitalRead(ENDH) && digitalRead(LID)) {    
     digitalWrite(PUL, LOW);
     delay(30);
     digitalWrite(PUL, HIGH);
@@ -358,7 +361,7 @@ void set_zero() {
   }
 
   // lid open -> php should not move
-  if (digitalRead(LID)){
+  if (!digitalRead(LID)){
     digitalWrite(PUL, HIGH);
     Serial.println("------------------------");
     Serial.println("\tLid open");
@@ -380,6 +383,7 @@ void end_low() {
   digitalWrite(DIR, CW);
   digitalWrite(PUL, HIGH);
 
+  // Low
   while (digitalRead(ENDL) && !digitalRead(ENDH)) {
 
     counter1++;
