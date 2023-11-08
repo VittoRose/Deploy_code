@@ -295,8 +295,7 @@ void loop() {
 }
 
 void rotate_angle(float ang, int t, bool dir) {
-  /* function that add or subtract the ang value to the relative position of the PHP
-    */
+  /* function that add or subtract the ang value to the relative position of the PHP */
 
   uint8_t i = 0;
   uint8_t step = 0;
@@ -324,6 +323,7 @@ void set_zero() {
   // function that find the zero position of the php
 
   detachInterrupt(digitalPinToInterrupt(ENDL));
+  detachInterrupt(digitalPinToInterrupt(ENDH));
   digitalWrite(DIR, CCW);
 
   Serial.println("PHP reset");
@@ -337,16 +337,24 @@ void set_zero() {
   Serial.println("Limit switch pressed");
 
   digitalWrite(DIR, CW);
-  while (digitalRead(ENDL)) {
+  while (digitalRead(ENDL) && !digitalRead(ENDH)) {
     digitalWrite(PUL, LOW);
     delay(30);
     digitalWrite(PUL, HIGH);
+  }
+
+  if (digitalRead(ENDH)){
+    digitalWrite(PUL, HIGH);
+    Serial.println("------------------------");
+    Serial.println("ERROR: both switches pressed");
+    Serial.println("------------------------");
   }
 
   Serial.println("Limit switch released");
 
 
   attachInterrupt(digitalPinToInterrupt(ENDL), end_low, INTERRUPT_COND);
+  attachInterrupt(digitalPinToInterrupt(ENDH), end_high, INTERRUPT_COND);
   delay(100);
 }
 
