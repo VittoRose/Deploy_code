@@ -14,10 +14,7 @@
 #include <Servo.h>
 #include <MPU6050_tockn.h>
 #include <Wire.h>
-#include <math.h>
 
-#define ENDL 2  // Arduino connection
-#define ENDH 3
 
 #define PUL 9  // Stepper driver connection
 #define DIR 10
@@ -28,6 +25,8 @@
 #define MIN45 27
 #define PLUS180 29
 #define MIN180 31
+#define ENDL 2      // Limit switches
+#define ENDH 3
 
 #define HGRESISTOR 7  // IR tirgger
 #define LGRESISTOR 8
@@ -40,7 +39,7 @@
 #define MAXSERVOANG 100
 #define MINSERVOANG 10
 #define SERVOSPEED 40
-#define RESDELAY 30000
+#define RESDELAY 300
 #define SERVOLED 13
 #define SERVOPIN 46
 
@@ -355,6 +354,7 @@ void end_low() {
   // function executed in case the limit switch send a signal, case 0 degrees
 
   Serial.println("INTERRUPT LOW");
+  detachInterrupt(digitalPinToInterrupt(ENDH));
   buttonInterrupt = HIGH;
   digitalWrite(DIR, CW);
   digitalWrite(PUL, HIGH);
@@ -380,12 +380,15 @@ void end_low() {
       Serial.println("-------------------------------");
     }
   }
+  attachInterrupt(digitalPinToInterrupt(ENDH), end_high, INTERRUPT_COND);
 }
 
 void end_high() {
   // function executed in case the limit switch send a signal, case 180 degrees
 
   Serial.println("INTERRUPT HIGH");
+  detachInterrupt(digitalPinToInterrupt(ENDL));
+
   buttonInterrupt = HIGH;
 
   digitalWrite(DIR, CCW);
@@ -412,6 +415,8 @@ void end_high() {
       Serial.println("-------------------------------");
     }
   }
+   attachInterrupt(digitalPinToInterrupt(ENDH), end_high, INTERRUPT_COND);
+
 }
 
 float average(float measure[], int size) {
