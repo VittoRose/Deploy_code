@@ -416,7 +416,7 @@ void end_high() {
     Serial.println("-------------------------------");
   }
   
-  attachInterrupt(digitalPinToInterrupt(ENDL), end_high, INTERRUPT_COND);
+  attachInterrupt(digitalPinToInterrupt(ENDL), end_low, INTERRUPT_COND);
 }
 
 float average(float measure[], int size) {
