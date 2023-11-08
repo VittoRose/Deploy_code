@@ -124,7 +124,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(ENDL), end_low, INTERRUPT_COND);
   attachInterrupt(digitalPinToInterrupt(ENDH), end_high, INTERRUPT_COND);
 
-  digitalWrite(PUL, HIGH);  // start with high => everything on
+  digitalWrite(PUL, HIGH);  // start with high => everything stationary
   digitalWrite(DIR, HIGH);
   digitalWrite(ENA, HIGH);
 
@@ -359,7 +359,7 @@ void end_low() {
   digitalWrite(DIR, CW);
   digitalWrite(PUL, HIGH);
 
-  while (digitalRead(ENDL)) {
+  while (digitalRead(ENDL) && !digitalRead(ENDH)) {
 
     counter1++;
 
@@ -372,13 +372,13 @@ void end_low() {
       }
       counter1 = 0;
     }
+  }
 
-    if (digitalRead(ENDH)){
-      digitalWrite(PUL, HIGH);
-      Serial.println("-------------------------------");
-      Serial.print("ERROR\t"); Serial.println("Both limit switches pressed");
-      Serial.println("-------------------------------");
-    }
+  if (digitalRead(ENDH)){
+    digitalWrite(PUL, HIGH);
+    Serial.println("-------------------------------");
+    Serial.print("ERROR\t"); Serial.println("Both limit switches pressed");
+    Serial.println("-------------------------------");
   }
   attachInterrupt(digitalPinToInterrupt(ENDH), end_high, INTERRUPT_COND);
 }
@@ -394,7 +394,7 @@ void end_high() {
   digitalWrite(DIR, CCW);
   digitalWrite(PUL, HIGH);
 
-  while (digitalRead(ENDH)) {
+  while (digitalRead(ENDH) && !digitalRead(ENDL)) {
 
     counter1++;
 
@@ -407,16 +407,16 @@ void end_high() {
       }
       counter1 = 0;
     }
-    
-    if (digitalRead(ENDH)){
-      digitalWrite(PUL, HIGH);
-      Serial.println("-------------------------------");
-      Serial.print("ERROR\t"); Serial.println("Both limit switches pressed");
-      Serial.println("-------------------------------");
-    }
   }
-   attachInterrupt(digitalPinToInterrupt(ENDH), end_high, INTERRUPT_COND);
 
+  if (digitalRead(ENDL)){
+    digitalWrite(PUL, HIGH);
+    Serial.println("-------------------------------");
+    Serial.print("ERROR\t"); Serial.println("Both limit switches pressed");
+    Serial.println("-------------------------------");
+  }
+  
+  attachInterrupt(digitalPinToInterrupt(ENDL), end_high, INTERRUPT_COND);
 }
 
 float average(float measure[], int size) {
