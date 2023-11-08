@@ -25,6 +25,7 @@
 #define MIN45 27
 #define PLUS180 29
 #define MIN180 31
+#define LID  30
 #define ENDL 2      // Limit switches
 #define ENDH 3
 
@@ -51,7 +52,6 @@
 
 /*
     extra button provided in PCB
-    #define     EXTRA2  32
     #define     EXTRA3  33
 
 */
@@ -121,6 +121,7 @@ void setup() {
 
   pinMode(ENDL, INPUT);  //Limit switches
   pinMode(ENDH, INPUT);
+  pinMode(LID, INPUT);
   attachInterrupt(digitalPinToInterrupt(ENDL), end_low, INTERRUPT_COND);
   attachInterrupt(digitalPinToInterrupt(ENDH), end_high, INTERRUPT_COND);
 
@@ -307,12 +308,13 @@ void rotate_angle(float ang, int t, bool dir) {
   } else digitalWrite(DIR, LOW);
 
   for (i = 0; i < step; i++) {
-    if (buttonInterrupt == LOW) {
+    if (buttonInterrupt == LOW && !digitalRead(LID)) {
       digitalWrite(PUL, LOW);
       delay(t);
       digitalWrite(PUL, HIGH);
-    } else {
-      Serial.println(" END SWITCH SIGNAL");
+    } else if (digitalRead(LID)){
+      digitalWrite(PUL, HIGH);
+      Serial.println("LID OPEN");
       break;
     }
   }
@@ -328,7 +330,8 @@ void set_zero() {
 
   Serial.println("PHP reset");
 
-  while (!digitalRead(ENDL)) {
+  // rotating the php untill the lower switches is pressed
+  while (!digitalRead(ENDL) && !digitalRead(LID)) {
     digitalWrite(PUL, LOW);
     delay(30);
     digitalWrite(PUL, HIGH);
@@ -336,21 +339,31 @@ void set_zero() {
 
   Serial.println("Limit switch pressed");
 
+  // change the direction of motion
   digitalWrite(DIR, CW);
-  while (digitalRead(ENDL) && !digitalRead(ENDH)) {
+
+  // leaving the end switches 
+  while (digitalRead(ENDL) && !digitalRead(ENDH) && !digitalRead(LID)) {    
     digitalWrite(PUL, LOW);
     delay(30);
     digitalWrite(PUL, HIGH);
   }
 
-  if (digitalRead(ENDH)){
+  //both switches pressed -> php should not move
+  if (digitalRead(ENDH)){                     
     digitalWrite(PUL, HIGH);
     Serial.println("------------------------");
     Serial.println("ERROR: both switches pressed");
     Serial.println("------------------------");
   }
 
-  Serial.println("Limit switch released");
+  // lid open -> php should not move
+  if (digitalRead(LID)){
+    digitalWrite(PUL, HIGH);
+    Serial.println("------------------------");
+    Serial.println("\tLid open");
+    Serial.println("------------------------");
+  }
 
 
   attachInterrupt(digitalPinToInterrupt(ENDL), end_low, INTERRUPT_COND);
@@ -385,7 +398,7 @@ void end_low() {
   if (digitalRead(ENDH)){
     digitalWrite(PUL, HIGH);
     Serial.println("-------------------------------");
-    Serial.print("ERROR\t"); Serial.println("Both limit switches pressed");
+    Serial.println("ERROR: both switches pressed");
     Serial.println("-------------------------------");
   }
   attachInterrupt(digitalPinToInterrupt(ENDH), end_high, INTERRUPT_COND);
