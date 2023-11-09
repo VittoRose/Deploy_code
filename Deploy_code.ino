@@ -314,7 +314,8 @@ void rotate_angle(float ang, int t, bool dir) {
   uint8_t step = 0;
 
   // compute the number of steps necessary
-  step = round(TAU * NSTEP * ang / 360);
+  // step = round(TAU * NSTEP * ang / 360);
+  step = (ang == 180) ? 800 : 200;
   Serial.println(step);
 
   if (dir == CW) {
