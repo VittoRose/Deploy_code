@@ -44,8 +44,8 @@
 #define SERVOLED 13
 #define SERVOPIN 46
 
-#define NSTEP 400  // Stepper parameters
-#define TAU 4
+#define NSTEP 400.0  // Stepper parameters
+#define TAU 4.0
 #define CW HIGH
 #define CCW LOW
 #define INTERRUPT_COND RISING
@@ -129,7 +129,8 @@ void setup() {
   digitalWrite(DIR, HIGH);
   digitalWrite(ENA, HIGH);
 
-  _plus45 = digitalRead(PLUS45);  //save the value of the buttons at the starting time to detect changes
+  //save the value of the buttons at the starting time to detect changes
+  _plus45 = digitalRead(PLUS45);  
   _min45 = digitalRead(MIN45);
   _plus180 = digitalRead(PLUS180);
   _min180 = digitalRead(MIN180);
@@ -151,6 +152,8 @@ void setup() {
   pinMode(HGRESISTOR, OUTPUT);
 
   digitalWrite(SERVOLED, LOW);
+
+  //save the value of the button at the sarting time to detect changes
   _servobtt = digitalRead(SERVOBTT);
 
 
@@ -181,44 +184,48 @@ void loop() {
 
   txt_in = Serial.read();
 
+  // minus 45 rotation
   if ((digitalRead(MIN45) != _min45 || txt_in == 'a') && buttonInterrupt == LOW) {
     delay(300);
     Serial.println("Starting -45 degrees rotation");
     rotate_angle(45, 10, CCW);
   } else buttonInterrupt = LOW;
 
+  // plus 45 rotation
   if ((digitalRead(PLUS45) != _plus45 || txt_in == 'b') && buttonInterrupt == LOW) {
     delay(300);
     Serial.println("Starting +45 degrees rotation");
     rotate_angle(45, 10, CW);
   } else buttonInterrupt = LOW;
 
-
+  // minus 180 rotation
   if ((digitalRead(MIN180) != _min180 || txt_in == 'c') && buttonInterrupt == LOW) {
     delay(300);
     Serial.println("Starting -180 degrees rotation");
     rotate_angle(180, 10, CCW);
   } else buttonInterrupt = LOW;
 
+  // plus 180 rotation
   if ((digitalRead(PLUS180) != _plus180 || txt_in == 'd') && buttonInterrupt == LOW) {
     delay(300);
     Serial.println("Starting +180 degrees rotation");
     rotate_angle(180, 10, CW);
   } else buttonInterrupt = LOW;
 
-
+  // set zero proceduere
   if (digitalRead(SZERO) != _setzero || txt_in == 'z') {
     delay(300);
     set_zero();
   }
 
+  // save the current value of the button to detect 
   _plus45 = digitalRead(PLUS45);
   _min45 = digitalRead(MIN45);
   _plus180 = digitalRead(PLUS180);
   _min180 = digitalRead(MIN180);
   _setzero = digitalRead(SZERO);
 
-  /*
+/*
 ---------------------------------------------------------------------
                         SERVO
 ---------------------------------------------------------------------
@@ -269,6 +276,7 @@ void loop() {
   if (j < (SIZE - 1)) j++;
   else j = 0;
 
+  // compute the average from the previous SIZE samples
   avg = average(fil, SIZE);
 
   // hypergravity resistor
@@ -285,6 +293,7 @@ void loop() {
     lg_timer = millis();
   }
 
+  //turn off the resistors after rsdelay milliseconds
   if (millis() - hg_timer >= RESDELAY) digitalWrite(HGRESISTOR, LOW);
   if (millis() - lg_timer >= RESDELAY) digitalWrite(LGRESISTOR, LOW);
 
@@ -303,6 +312,8 @@ void rotate_angle(float ang, int t, bool dir) {
 
   uint8_t i = 0;
   uint8_t step = 0;
+
+  // compute the number of steps necessary
   step = round(TAU * NSTEP * ang / 360);
   Serial.println(step);
 
@@ -310,12 +321,13 @@ void rotate_angle(float ang, int t, bool dir) {
     digitalWrite(DIR, HIGH);
   } else digitalWrite(DIR, LOW);
 
+  // if no interrupt do steps
   for (i = 0; i < step; i++) {
     if (buttonInterrupt == LOW && digitalRead(LID)) {
       digitalWrite(PUL, LOW);
       delay(t);
       digitalWrite(PUL, HIGH);
-    } else if (!digitalRead(LID)){
+    } else if (!digitalRead(LID)){      //break if lid open
       digitalWrite(PUL, HIGH);
       Serial.println("LID OPEN");
       break;
