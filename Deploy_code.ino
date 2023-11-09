@@ -7,7 +7,7 @@
     VittoRose (GitHub)
 
     Created: May 2023
-    Updated: October 2023
+    Updated: November 2023
 
 */
 
@@ -310,8 +310,8 @@ void loop() {
 void rotate_angle(float ang, int t, bool dir) {
   /* function that add or subtract the ang value to the relative position of the PHP */
 
-  uint8_t i = 0;
-  uint8_t step = 0;
+  uint16_t i = 0;
+  uint16_t step = 0;
 
   // compute the number of steps necessary
   // step = round(TAU * NSTEP * ang / 360);
