@@ -35,6 +35,7 @@
 #define ACC_X2 mpu6050.getAccX() * mpu6050.getAccX()
 #define ACC_Y2 mpu6050.getAccY() * mpu6050.getAccY()
 #define ACC_Z2 mpu6050.getAccZ() * mpu6050.getAccZ()
+#define MPU_SLEEP 3000
 
 #define SERVOBTT 34            //Servo parameters
 #define MAXSERVOANG 100
@@ -99,6 +100,8 @@ MPU6050 mpu6050(Wire);
 
 unsigned long hg_timer = 0;
 unsigned long lg_timer = 0;
+
+bool mpu_status = HIGH;
 
 int j = 0;
 float avg = 0.0;
@@ -275,6 +278,10 @@ void loop() {
 */
 
   mpu6050.update();
+
+  // send 'n' to disable the IMU, send 'p' to enable IMU
+  if ( txt_in == 'n') mpu_status = LOW;
+  if (txt_in == 'p') mpu_status = HIGH;
   
   //collect acceleration sample 
   fil[j] = sqrt(ACC_X2 + ACC_Y2 + ACC_Z2);
@@ -285,18 +292,21 @@ void loop() {
   // compute the average from the previous SIZE samples
   avg = average(fil, SIZE);
 
-  // hypergravity resistor
-  if (txt_in == 'h' || avg >= 1.6) {
-    Serial.println("Heating the HG resistor");
-    digitalWrite(HGRESISTOR, HIGH);
-    hg_timer = millis();
-  }
+  if(millis() >= MPU_SLEEP){
 
-  // microgravity resistor
-  if (txt_in == 'l' || avg <= 0.4) {
-    Serial.println("Heating the LG resistor");
-    digitalWrite(LGRESISTOR, HIGH);
-    lg_timer = millis();
+    // hypergravity resistor
+    if ((txt_in == 'h' || avg >= 1.6) && mpu_status == HIGH) {
+      Serial.println("Heating the HG resistor");
+      digitalWrite(HGRESISTOR, HIGH);
+      hg_timer = millis();
+    }
+
+    // microgravity resistor
+    if ((txt_in == 'l' || avg <= 0.4) && mpu_status == HIGH) {
+      Serial.println("Heating the LG resistor");
+      digitalWrite(LGRESISTOR, HIGH);
+      lg_timer = millis();
+    }
   }
 
   //turn off the resistors after rsdelay milliseconds
