@@ -64,6 +64,7 @@
 bool ena = HIGH;
 bool brk = HIGH;
 
+// variable to store the previous buttons reading
 bool _plus45 = LOW;
 bool _min45 = LOW;
 bool _plus180 = LOW;
@@ -81,8 +82,11 @@ volatile bool buttonInterrupt = LOW;
 */
 
 char txt_in = '0';
+
+// variable to store the previous buttons reading
 bool _servobtt = LOW;
-uint8_t servo_ang = MAXSERVOANG;
+
+uint16_t servo_ang = MAXSERVOANG;
 Servo blackbody;
 
 /*
@@ -109,6 +113,7 @@ void setup() {
         STEPPER
 ---------------------------------------------------
 */
+
   pinMode(PUL, OUTPUT);  //Stepper driver signal pins
   pinMode(DIR, OUTPUT);
   pinMode(ENA, OUTPUT);
@@ -231,6 +236,7 @@ void loop() {
 ---------------------------------------------------------------------
 */
 
+// servo rotation
   if (txt_in == 'e' || digitalRead(SERVOBTT) != _servobtt) {
 
     if (servo_ang == MAXSERVOANG) {
@@ -316,13 +322,13 @@ void rotate_angle(float ang, int t, bool dir) {
   // compute the number of steps necessary
   // step = round(TAU * NSTEP * ang / 360);
   step = (ang == 180) ? 800 : 200;
-  Serial.println(step);
+  //Serial.println(step);
 
   if (dir == CW) {
     digitalWrite(DIR, HIGH);
   } else digitalWrite(DIR, LOW);
 
-  // if no interrupt do steps
+  // if no interrupt and lid closed do steps
   for (i = 0; i < step; i++) {
     if (buttonInterrupt == LOW && digitalRead(LID)) {
       digitalWrite(PUL, LOW);
@@ -342,6 +348,8 @@ void set_zero() {
 
   detachInterrupt(digitalPinToInterrupt(ENDL));
   detachInterrupt(digitalPinToInterrupt(ENDH));
+  
+  // set the direction to reduce the angle
   digitalWrite(DIR, CCW);
 
   Serial.println("PHP reset");
@@ -396,7 +404,7 @@ void end_low() {
   digitalWrite(DIR, CW);
   digitalWrite(PUL, HIGH);
 
-  // Low
+  // rotate untill the php leave the low switch if the other one is not pressed
   while (digitalRead(ENDL) && !digitalRead(ENDH)) {
 
     counter1++;
@@ -412,6 +420,7 @@ void end_low() {
     }
   }
 
+  // block the rotation if both switches are pressed
   if (digitalRead(ENDH)){
     digitalWrite(PUL, HIGH);
     Serial.println("-------------------------------");
@@ -432,6 +441,7 @@ void end_high() {
   digitalWrite(DIR, CCW);
   digitalWrite(PUL, HIGH);
 
+  // rotate untill the php leave the high switch if the other one is not pressed
   while (digitalRead(ENDH) && !digitalRead(ENDL)) {
 
     counter1++;
@@ -447,6 +457,7 @@ void end_high() {
     }
   }
 
+  // block the rotation if both switches are pressed
   if (digitalRead(ENDL)){
     digitalWrite(PUL, HIGH);
     Serial.println("-------------------------------");
