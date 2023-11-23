@@ -11,6 +11,10 @@
 
 */
 
+#define GYROSET 1
+#define ACCPLOT 1
+
+
 #include <Servo.h>
 #include <MPU6050_tockn.h>
 #include <Wire.h>
@@ -35,7 +39,7 @@
 #define ACC_X2 mpu6050.getAccX() * mpu6050.getAccX()
 #define ACC_Y2 mpu6050.getAccY() * mpu6050.getAccY()
 #define ACC_Z2 mpu6050.getAccZ() * mpu6050.getAccZ()
-#define MPU_SLEEP 3000
+#define MPU_SLEEP 10000
 
 #define SERVOBTT 34            //Servo parameters
 #define MAXSERVOANG 100
@@ -61,9 +65,6 @@
         STEPPER
 ---------------------------------------------------
 */
-
-bool ena = HIGH;
-bool brk = HIGH;
 
 // variable to store the previous buttons reading
 bool _plus45 = LOW;
@@ -100,6 +101,7 @@ MPU6050 mpu6050(Wire);
 
 unsigned long hg_timer = 0;
 unsigned long lg_timer = 0;
+unsigned long mpu_timer = 0;
 
 bool mpu_status = HIGH;
 
@@ -111,7 +113,7 @@ float fil[SIZE];
 void setup() {
   Serial.begin(115200);
 
-  /*
+/*
 ---------------------------------------------------
         STEPPER
 ---------------------------------------------------
@@ -173,13 +175,17 @@ void setup() {
 
   Wire.begin();
   mpu6050.begin();
-  mpu6050.calcGyroOffsets(true);
   digitalWrite(LGRESISTOR, LOW);
   digitalWrite(HGRESISTOR, LOW);
 
   Serial.println("\n------------------------------");
   Serial.println("\tARDUINO READY");
   Serial.println("------------------------------");
+
+  #if GYROSET == 1
+  mpu6050.calcGyroOffsets(true);
+  #endif
+
 }
 
 void loop() {
@@ -284,7 +290,7 @@ void loop() {
   if (txt_in == 'p') mpu_status = HIGH;
   
   //collect acceleration sample 
-  fil[j] = sqrt(ACC_X2 + ACC_Y2 + ACC_Z2);
+  fil[j] = ACC_X2 + ACC_Y2 + ACC_Z2;
 
   if (j < (SIZE - 1)) j++;
   else j = 0;
@@ -295,14 +301,14 @@ void loop() {
   if(millis() >= MPU_SLEEP){
 
     // hypergravity resistor
-    if ((txt_in == 'h' || avg >= 1.6) && mpu_status == HIGH) {
+    if ((txt_in == 'h' || avg >= 3) && mpu_status == HIGH) {
       Serial.println("Heating the HG resistor");
       digitalWrite(HGRESISTOR, HIGH);
       hg_timer = millis();
     }
 
     // microgravity resistor
-    if ((txt_in == 'l' || avg <= 0.4) && mpu_status == HIGH) {
+    if ((txt_in == 'l' || avg <= 0.3) && mpu_status == HIGH) {
       Serial.println("Heating the LG resistor");
       digitalWrite(LGRESISTOR, HIGH);
       lg_timer = millis();
@@ -312,6 +318,13 @@ void loop() {
   //turn off the resistors after rsdelay milliseconds
   if (millis() - hg_timer >= RESDELAY) digitalWrite(HGRESISTOR, LOW);
   if (millis() - lg_timer >= RESDELAY) digitalWrite(LGRESISTOR, LOW);
+
+  #if ACCPLOT == 1
+    if (millis() - mpu_timer >= 500){
+      Serial.println(avg);
+      mpu_timer = millis();
+    }
+  #endif
 
   // RESET
   if (txt_in == 'r') {
